@@ -1,7 +1,21 @@
+# =============================================================================
+# Project  : Data Pipleline Implementation
+# File     : load_data.py
+# Author   : John Panzer, with some help from Claude AI
+# Course   : COMP4330 - Intro to Machine Learning
+# Professor: Dr. Hamilton
+# Due      : 2026-03-29
+#------------------------------------------------------------------------------
+# Loads the raw CSV file and separates it into labeled and unlabeled target
+# variable tuples to prepare them for preprocessing
+# =============================================================================
+
 import pandas as pd
 from pathlib import Path
 from typing import Optional
 
+# load the features of the CSV file, columns, etc.
+# as of 3/24, feature_metadata.py isnt implemented yet
 from feature_metadata import (
         MODEL_FEATURES,
         TARGET_COL,
@@ -12,11 +26,13 @@ from feature_metadata import (
 def load_raw(filepath: str | Path) -> pd.DataFrame:
     return pd.read_csv(filepath)
 
+# split the labeled entries and the unlabled entries into two dataframes
 def split_labeled_unlabeled(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     labeled_df = df[df[TARGET_COL].notna()].copy
     unlabeled_df = df[df[TARGET_COL].isna()].copy
     return labeled_df, unlabeled_df
 
+# encode  
 def encode_label(label: str) -> int:
     return 1 if str(label).strip().lower() == "fraud" else 0
 
@@ -34,7 +50,7 @@ def df_to_tuples (df: pd.DataFrame, feature_names: Optional[list[str]] = None, i
         else [None] * len(df)
     )
     return list(zip(records, labels))
-
+# setup the pipeline for preprocessing
 def load_pipeline(filepath: str | Path, feature_names: Optional[list[str]] = None) -> tuple[list[tuple], list[tuple]]:
     df = load_raw(filepath)
     validate_dataframe(df)
@@ -47,7 +63,7 @@ def load_pipeline(filepath: str | Path, feature_names: Optional[list[str]] = Non
     return labeled_tuples, unlabeled_tuples
 
 
-#----------------------main----------------------
+#----------------------test output----------------------
 if __name__ == "__main__":
     import sys
 
