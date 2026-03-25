@@ -32,7 +32,7 @@ def split_labeled_unlabeled(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
     unlabeled_df = df[df[TARGET_COL].isna()].copy
     return labeled_df, unlabeled_df
 
-# encode each entry with 1 or 0, 1 when the target variable is fraud and 0 when its normal
+# encode each entry with 1 or 0, 1 when the target variable is fraud and 0 otherwise (normal)
 def encode_label(label: str) -> int:
     return 1 if str(label).strip().lower() == "fraud" else 0
 
