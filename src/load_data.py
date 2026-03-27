@@ -13,14 +13,9 @@
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+import feature_metadata
 
 # load the features of the CSV file, columns, etc.
-# as of 3/24, feature_metadata.py isnt implemented yet
-from feature_metadata import (
-        MODEL_FEATURES,
-        TARGET_COL,
-        validate_dataframe
-)
 
 # read CSV
 def load_raw(filepath: str | Path) -> pd.DataFrame:
@@ -28,8 +23,8 @@ def load_raw(filepath: str | Path) -> pd.DataFrame:
 
 # split the labeled entries and the unlabled entries into two dataframes
 def split_labeled_unlabeled(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    labeled_df = df[df[TARGET_COL].notna()].copy
-    unlabeled_df = df[df[TARGET_COL].isna()].copy
+    labeled_df = df[df[feature_metadata.TARGET_COL].notna()].copy
+    unlabeled_df = df[df[feature_metadata.TARGET_COL].isna()].copy
     return labeled_df, unlabeled_df
 
 # encode each entry with 1 or 0, 1 when the target variable is fraud and 0 otherwise (normal)
@@ -39,21 +34,22 @@ def encode_label(label: str) -> int:
 def df_to_tuples (df: pd.DataFrame, feature_names: Optional[list[str]] = None, include_label: bool = True) -> list[tuple[dict, Optional[int]]]:
     #convert list to feature_dict, label tuples
     if feature_names is None:
-        feature_names = [f.name for f in MODEL_FEATURES]
+        feature_names = [f.name for f in feature_metadata.MODEL_FEATURES]
     
-    cols_present = [c for cols in feature_names if c in df.columns]
+    cols_present = [c for c in feature_names if c in df.columns]
 
     records = df[cols_present].to_dict(orient="records")
     labels = (
-        df[TARGET_COL].apply(encode_label).tolist()
+        df[feature_metadata.TARGET_COL].apply(encode_label).tolist()
         if include_label
         else [None] * len(df)
     )
     return list(zip(records, labels))
+
 # setup the pipeline for preprocessing
 def load_pipeline(filepath: str | Path, feature_names: Optional[list[str]] = None) -> tuple[list[tuple], list[tuple]]:
     df = load_raw(filepath)
-    validate_dataframe(df)
+    feature_metadata.validate_dataframe(df)
 
     labeled_df, unlabeled_df = split_labeled_unlabeled(df)
 
@@ -67,7 +63,7 @@ def load_pipeline(filepath: str | Path, feature_names: Optional[list[str]] = Non
 if __name__ == "__main__":
     import sys
 
-    path = sys.argv[1] if len(sys.argv) > 1 else "FraudShield_Banking_Data.csv"
+    path = sys.argv[1] if len(sys.argv) > 1 else "/home/dragon/Documents/Repos/ML-Semester-Project/src/FraudShield_Banking_Data.csv"
     labeled, unlabeled =load_pipeline(path)
 
     print(f"Labeled tuples   : {len(labeled):,}")
@@ -77,7 +73,7 @@ if __name__ == "__main__":
     print(f"  label    : {labeled[0][1]}")
 
     fraud_count = sum(1 for _, lbl in labeled if lbl == 1)
-    normal_count = sum(1 for _, in unlabeled if lbl ==0)
+    normal_count = sum(1 for _, lbl in unlabeled if lbl ==0)
 
     print(f"\nClass distribution:")
     print(f"  Normal : {normal_count:,} ({normal_count / len(labeled):.1%})")
