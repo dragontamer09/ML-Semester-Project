@@ -23,8 +23,8 @@ def load_raw(filepath: str | Path) -> pd.DataFrame:
 
 # split the labeled entries and the unlabled entries into two dataframes
 def split_labeled_unlabeled(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    labeled_df = df[df[feature_metadata.TARGET_COL].notna()].copy
-    unlabeled_df = df[df[feature_metadata.TARGET_COL].isna()].copy
+    labeled_df = df[df[feature_metadata.TARGET_COL].notna()].copy()
+    unlabeled_df = df[df[feature_metadata.TARGET_COL].isna()].copy()
     return labeled_df, unlabeled_df
 
 # encode each entry with 1 or 0, 1 when the target variable is fraud and 0 otherwise (normal)
@@ -58,6 +58,18 @@ def load_pipeline(filepath: str | Path, feature_names: Optional[list[str]] = Non
 
     return labeled_tuples, unlabeled_tuples
 
+def export_to_excel(labeled: list[tuple], unlabeled: list[tuple], output_path: str | Path = "pipeline_output.xlsx") -> None:
+    labeled_records = [{"Fraud_Label": lbl, **feats} for feats, lbl in labeled]
+    unlabeled_records = [{"Fraud_Label": None, **feats} for feats, _ in unlabeled]
+
+    labeled_df = pd.DataFrame(labeled_records)
+    unlabeled_df = pd.DataFrame(unlabeled_records)
+
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        labeled_df.to_excel(writer, sheet_name="Labeled", index="False")
+        unlabeled_df.to_excel(writer, sheet_name="Unlabeled", index="False")
+
+    print(f"Exported to {output_path}")
 
 #----------------------test output----------------------
 if __name__ == "__main__":
@@ -73,8 +85,10 @@ if __name__ == "__main__":
     print(f"  label    : {labeled[0][1]}")
 
     fraud_count = sum(1 for _, lbl in labeled if lbl == 1)
-    normal_count = sum(1 for _, lbl in unlabeled if lbl ==0)
+    normal_count = sum(1 for _, lbl in labeled if lbl ==0)
 
     print(f"\nClass distribution:")
     print(f"  Normal : {normal_count:,} ({normal_count / len(labeled):.1%})")
     print(f"  Fraud  : {fraud_count:,}  ({fraud_count  / len(labeled):.1%})")
+
+    export_to_excel(labeled, unlabeled)
