@@ -1,13 +1,36 @@
 import joblib
+import argparse
 import sys
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.calibration import CalibratedClassifierCV
 
 # bring in the pipeline
 sys.path.insert(0, str(Path(__file__).parent))
 from load_data import load_pipeline
 from preprocess import prepare_X_y
+
+def build_classifier(model_name: str, random_state: int):
+    if model_name == "decision_tree":
+        return DecisionTreeClassifier(
+            class_weight="balanced",
+            random_state=random_state,
+        )
+    elif model_name == "svm":
+        base_svm = LinearSVC(
+            class_weight="balanced",
+            max_iter=2000,
+            random_state=random_state,
+        )
+        return CalibratedClassifierCV(base_svm, cv=5)
+    else:
+        supported = ["decision_tree", "svm"]
+        raise ValueError(
+            f"Unknown model '{model_name}'. Supported options: {supported}"
+        )
+    
 
 def train(
         data_path: str | Path,
@@ -75,6 +98,25 @@ def train(
 
 if __name__ == "__main__":
  
-    data_path = sys.argv[1] if len(sys.argv) > 1 else "/home/dragon/Documents/Repos/ML-Semester-Project/src/FraudShield_Banking_Data.csv"
+    from evaluate import evaluate
  
-    train(data_path)
+    parser = argparse.ArgumentParser(description="Train a fraud detection classifier")
+    parser.add_argument("data_path", help="Path to the raw CSV file")
+    parser.add_argument(
+        "--model",
+        default="decision_tree",
+        choices=["decision_tree", "svm"],
+        help="Which classifier to train (default: decision_tree)",
+    )
+    args = parser.parse_args()
+ 
+    results = train(args.data_path, model_name=args.model)
+ 
+    print(f"\n--- Test set evaluation: {args.model} ---")
+    evaluate(
+        model=results["model"],
+        X_test=results["X_test"],
+        y_test=results["y_test"],
+        model_name=args.model,
+    )
+
