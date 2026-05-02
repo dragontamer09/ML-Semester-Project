@@ -1,3 +1,4 @@
+import time
 import joblib
 import argparse
 import sys
@@ -80,8 +81,10 @@ def train(
     # 5. Build Classifier
     model = build_classifier(model_name, random_state)
     print(f"Training {model_name} ...")
+    start_time = time.time()
     model.fit(X_train, y_train)
-    print("  Done.")
+    elapsed = time.time() - start_time
+    print(f"  Done. Training time: {elapsed:.2f} seconds.")
 
     # 5. Save Model and Preprocessor
     output_dir = Path(output_dir)
