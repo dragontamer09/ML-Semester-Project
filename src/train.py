@@ -10,7 +10,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.calibration import CalibratedClassifierCV
 
 # bring in the pipeline
-sys.path.insert(0, str(Path(__file__).parent))
+# handles both normal execution and PyInstaller bundles
+if getattr(sys, 'frozen', False):
+    base_path = Path(sys._MEIPASS)
+else:
+    base_path = Path(__file__).resolve().parent
+
+sys.path.insert(0, str(base_path))
 from load_data import load_pipeline
 from preprocess import prepare_X_y
 
