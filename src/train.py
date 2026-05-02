@@ -1,6 +1,7 @@
 import joblib
 import argparse
 import sys
+from imblearn.over_sampling import SMOTE
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
@@ -20,11 +21,22 @@ def build_classifier(model_name: str, random_state: int):
         )
     elif model_name == "svm":
         base_svm = LinearSVC(
-            class_weight="balanced",
-            max_iter=2000,
-            random_state=random_state,
-        )
+        class_weight="balanced",
+        max_iter=5000,      # was 2000, give it more iterations
+        tol=1e-3,           # relaxed tolerance — stops when close enough
+        dual=False,
+        random_state=random_state,
+        )   
         return CalibratedClassifierCV(base_svm, cv=5)
+    elif model_name == "svm_rbf":
+        from sklearn.svm import SVC
+        base_svm = SVC(
+        kernel="rbf",
+        class_weight="balanced",
+        probability=True,    # enables predict_proba() natively, no calibration wrapper needed
+        random_state=random_state,
+        )
+        return base_svm
     else:
         supported = ["decision_tree", "svm"]
         raise ValueError(
@@ -61,16 +73,15 @@ def train(
     print(f" Train set : {X_train.shape[0]:,} samples")
     print(f" Test set  : {X_test.shape[0]:,} samples")
 
-    # 4. Train Model
-    print(f"Training {model_name} model...")
-    model = DecisionTreeClassifier(
-        class_weight="balanced",
-        random_state=random_state
-    )
-
-    print("Fitting model to training data...")
+    # 4. Apply SMOTE to training data
+    sm = SMOTE(random_state=random_state)
+    X_train, y_train = sm.fit_resample(X_train, y_train)
+    print(f" After SMOTE : {int((y_train==0).sum())} normal / {int((y_train==1).sum())} fraud")
+    # 5. Build Classifier
+    model = build_classifier(model_name, random_state)
+    print(f"Training {model_name} ...")
     model.fit(X_train, y_train)
-    print("Model training complete.")
+    print("  Done.")
 
     # 5. Save Model and Preprocessor
     output_dir = Path(output_dir)
@@ -105,7 +116,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         default="decision_tree",
-        choices=["decision_tree", "svm"],
+        choices=["decision_tree", "svm", "svm_rbf"],
         help="Which classifier to train (default: decision_tree)",
     )
     args = parser.parse_args()

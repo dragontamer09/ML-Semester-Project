@@ -15,10 +15,11 @@ def evaluate(
     y_test: np.ndarray,
     model_name: str = "classifier",
 ) -> dict:
-    y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:,1]
+    threshold = 0.5 # tuning where the model should classify as
+    y_pred = (y_proba >= threshold).astype(int)
 
-    accuracy = accuracy_score(y_test, y_proba)
+    accuracy = accuracy_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_proba)
     cm = confusion_matrix(y_test, y_pred)
     report = classification_report(y_test, y_pred, target_names=["Normal", "Fraud"], zero_division=0)
