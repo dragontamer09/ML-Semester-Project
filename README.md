@@ -91,6 +91,7 @@ python src/evaluate.py outputs/models/decision_tree.joblib outputs/models/decisi
 ```
 
 The argument order is: `model file`, `preprocessor file`, `data file`.
+Though I am fairly certain this breaks. Attempt at your own risk.
 
 > **Important:** Always load the model and preprocessor together as a matched pair. The preprocessor was fitted on the same training data the model was trained on — using a mismatched preprocessor will produce incorrect results.
 
